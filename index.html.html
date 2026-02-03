@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Attribute Grammar Dashboard</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 5px solid #667eea;
+        }
+
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .grammar-rules {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 2px solid #e0e0e0;
+        }
+
+        .rule {
+            padding: 12px;
+            margin: 8px 0;
+            background: #f0f4ff;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.05em;
+        }
+
+        .semantic-rule {
+            background: #fff4e6;
+            border-left: 4px solid #ff9800;
+        }
+
+        .example-input {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .example-input input {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px;
+            font-size: 1.1em;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+        }
+
+        .example-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .parse-tree {
+            margin: 30px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            overflow-x: auto;
+        }
+
+        .tree-node {
+            display: inline-block;
+            text-align: center;
+            margin: 10px;
+        }
+
+        .node-content {
+            background: #667eea;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin: 5px;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .node-attribute {
+            background: #4caf50;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin: 5px;
+            font-size: 0.9em;
+            display: inline-block;
+        }
+
+        .tree-connection {
+            border-left: 2px solid #667eea;
+            height: 30px;
+            margin: 0 auto;
+            width: 2px;
+        }
+
+        .steps {
+            counter-reset: step-counter;
+        }
+
+        .step {
+            counter-increment: step-counter;
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            border-left: 5px solid #4caf50;
+            position: relative;
+        }
+
+        .step::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: -15px;
+            top: -15px;
+            background: #4caf50;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .step h4 {
+            color: #4caf50;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .highlight {
+            background: #ffeb3b;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .error {
+            background: #ffebee;
+            border-left-color: #f44336;
+            color: #c62828;
+        }
+
+        .success {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+            color: #2e7d32;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .info-box h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+
+        .flow-item {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            min-width: 150px;
+            margin: 10px;
+        }
+
+        .flow-arrow {
+            font-size: 2em;
+            color: #667eea;
+            margin: 0 10px;
+        }
+
+        .symbol-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .symbol-table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .symbol-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .symbol-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        code {
+            background: #f5f5f5;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #d32f2f;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .flow-diagram {
+                flex-direction: column;
+            }
+            
+            .flow-arrow {
+                transform: rotate(90deg);
+            }
+        }
+
+        .attribute-flow {
+            margin: 30px 0;
+        }
+
+        .flow-line {
+            border-left: 3px dashed #667eea;
+            padding-left: 20px;
+            margin: 20px 0;
+        }
+
+        .flow-step {
+            background: white;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+
+        .badge-synth {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge-inherit {
+            background: #fff3e0;
+            color: #e65100;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function AttributeGrammarDashboard() {
+            const [activeTab, setActiveTab] = useState(0);
+            const [exampleCode, setExampleCode] = useState('A = B + C');
+            const [analysis, setAnalysis] = useState(null);
+            const [step, setStep] = useState(0);
+
+            const symbolTable = {
+                'A': 'real',
+                'B': 'real',
+                'C': 'int'
+            };
+
+            const grammar = [
+                { 
+                    syntax: '<assign> → <var> = <expr>',
+                    semantic: '<expr>.expected_type ← <var>.actual_type',
+                    description: 'The expected type of the expression must match the actual type of the variable'
+                },
+                { 
+                    syntax: '<expr> → <var>[2] + <var>[3]',
+                    semantic: '<expr>.actual_type ← if (<var>[2].actual_type = int) and (<var>[3].actual_type = int) then int else real',
+                    description: 'If both variables are integers, the result is integer; otherwise, it\'s real'
+                },
+                { 
+                    syntax: '<expr> → <var>',
+                    semantic: '<expr>.actual_type ← <var>.actual_type',
+                    description: 'The expression type is the same as the variable type'
+                },
+                { 
+                    syntax: '<var> → A | B | C',
+                    semantic: '<var>.actual_type ← lookup(<var>.string)',
+                    description: 'Look up the variable type in the symbol table'
+                }
+            ];
+
+            const analyzeCode = () => {
+                const parts = exampleCode.split('=').map(p => p.trim());
+                if (parts.length !== 2) {
+                    setAnalysis({ error: 'Invalid syntax!' });
+                    return;
+                }
+
+                const leftVar = parts[0];
+                const rightExpr = parts[1];
+
+                const leftType = symbolTable[leftVar];
+                if (!leftType) {
+                    setAnalysis({ error: `Variable ${leftVar} is not defined in symbol table!` });
+                    return;
+                }
+
+                let rightType = null;
+                const exprParts = rightExpr.split('+').map(p => p.trim());
+                
+                if (exprParts.length === 2) {
+                    const type1 = symbolTable[exprParts[0]];
+                    const type2 = symbolTable[exprParts[1]];
+                    
+                    if (!type1 || !type2) {
+                        setAnalysis({ error: 'Undefined variable in expression!' });
+                        return;
+                    }
+
+                    rightType = (type1 === 'int' && type2 === 'int') ? 'int' : 'real';
+                    
+                    setAnalysis({
+                        leftVar,
+                        leftType,
+                        rightExpr,
+                        rightType,
+                        var1: exprParts[0],
+                        var1Type: type1,
+                        var2: exprParts[1],
+                        var2Type: type2,
+                        compatible: true,
+                        steps: [
+                            `Look up type of ${leftVar} in symbol table: ${leftType}`,
+                            `Look up type of ${exprParts[0]} in symbol table: ${type1}`,
+                            `Look up type of ${exprParts[1]} in symbol table: ${type2}`,
+                            `Compute expression type: ${type1} + ${type2} = ${rightType}`,
+                            `Check compatibility: ${leftType} ← ${rightType}`,
+                            rightType === leftType || (rightType === 'int' && leftType === 'real') 
+                                ? '✓ Assignment is valid!' 
+                                : '✗ Type mismatch error!'
+                        ]
+                    });
+                } else if (exprParts.length === 1) {
+                    const varName = exprParts[0];
+                    rightType = symbolTable[varName];
+                    
+                    if (!rightType) {
+                        setAnalysis({ error: 'Undefined variable!' });
+                        return;
+                    }
+
+                    setAnalysis({
+                        leftVar,
+                        leftType,
+                        rightExpr,
+                        rightType,
+                        var1: varName,
+                        var1Type: rightType,
+                        compatible: true,
+                        steps: [
+                            `Look up type of ${leftVar} in symbol table: ${leftType}`,
+                            `Look up type of ${varName} in symbol table: ${rightType}`,
+                            `Expression type = Variable type: ${rightType}`,
+                            `Check compatibility: ${leftType} ← ${rightType}`,
+                            rightType === leftType || (rightType === 'int' && leftType === 'real')
+                                ? '✓ Assignment is valid!'
+                                : '✗ Type mismatch error!'
+                        ]
+                    });
+                }
+
+                setStep(0);
+            };
+
+            const TabContent = ({ index, children }) => (
+                <div className={`section ${activeTab === index ? 'active' : ''}`}>
+                    {children}
+                </div>
+            );
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>📚 Interactive Attribute Grammar Dashboard</h1>
+                        <p>Comprehensive understanding of how Attribute Grammars work</p>
+                    </div>
+
+                    <div className="content">
+                        <div className="tabs">
+                            <button 
+                                className={`tab ${activeTab === 0 ? 'active' : ''}`}
+                                onClick={() => setActiveTab(0)}
+                            >
+                                Core Concepts
+                            </button>
+                            <button 
+                                className={`tab ${activeTab === 1 ? 'active' : ''}`}
+                                onClick={() => setActiveTab(1)}
+                            >
+                                Grammar Rules
+                            </button>
+                            <button 
+                                className={`tab ${activeTab === 2 ? 'active' : ''}`}
+                                onClick={() => setActiveTab(2)}
+                            >
+                                Interactive Example
+                            </button>
+                            <button 
+                                className={`tab ${activeTab === 3 ? 'active' : ''}`}
+                                onClick={() => setActiveTab(3)}
+                            >
+                                Parse Tree
+                            </button>
+                            <button 
+                                className={`tab ${activeTab === 4 ? 'active' : ''}`}
+                                onClick={() => setActiveTab(4)}
+                            >
+                                How It Works
+                            </button>
+                        </div>
+
+                        <TabContent index={0}>
+                            <div className="card">
+                                <h3>🎯 What is Attribute Grammar?</h3>
+                                <p style={{fontSize: '1.1em', lineHeight: '1.8'}}>
+                                    <strong>Attribute Grammar</strong> is an extension to Context-Free Grammar (CFG) that allows 
+                                    adding <span className="highlight">semantic information</span> to syntactic rules. 
+                                    It's used to describe both the syntactic structure (Syntax) and static semantics of programming languages.
+                                </p>
+                            </div>
+
+                            <div className="card">
+                                <h3>🔑 Key Components</h3>
+                                <div className="flow-diagram">
+                                    <div className="flow-item">
+                                        <div style={{fontSize: '2em', marginBottom: '10px'}}>📝</div>
+                                        <h4>Syntax Rules</h4>
+                                        <p>Grammar productions</p>
+                                    </div>
+                                    <div className="flow-arrow">→</div>
+                                    <div className="flow-item">
+                                        <div style={{fontSize: '2em', marginBottom: '10px'}}>🏷️</div>
+                                        <h4>Attributes</h4>
+                                        <p>Associated values</p>
+                                    </div>
+                                    <div className="flow-arrow">→</div>
+                                    <div className="flow-item">
+                                        <div style={{fontSize: '2em', marginBottom: '10px'}}>⚙️</div>
+                                        <h4>Semantic Rules</h4>
+                                        <p>Computation functions</p>
+                                    </div>
+                                    <div className="flow-arrow">→</div>
+                                    <div className="flow-item">
+                                        <div style={{fontSize: '2em', marginBottom: '10px'}}>✅</div>
+                                        <h4>Predicates</h4>
+                                        <p>Validation checks</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="card">
+                                <h3>📊 Types of Attributes</h3>
+                                <div className="grid-2">
+                                    <div className="info-box">
+                                        <h4>⬇️ Synthesized Attributes</h4>
+                                        <p style={{lineHeight: '1.6'}}>
+                                            Attributes computed <strong>bottom-up</strong> in the parse tree.
+                                            They flow from child nodes to parent nodes.
+                                        </p>
+                                        <code>actual_type</code>
+                                        <p style={{marginTop: '10px', fontSize: '0.95em'}}>
+                                            Example: Computing the type of an expression based on its operands.
+                                        </p>
+                                    </div>
+                                    <div className="info-box">
+                                        <h4>⬆️ Inherited Attributes</h4>
+                                        <p style={{lineHeight: '1.6'}}>
+                                            Attributes computed <strong>top-down</strong> in the parse tree.
+                                            They flow from parent nodes to child nodes.
+                                        </p>
+                                        <code>expected_type</code>
+                                        <p style={{marginTop: '10px', fontSize: '0.95em'}}>
+                                            Example: Passing expected type information from assignment to expression.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="card">
+                                <h3>💡 Benefits of Attribute Grammars</h3>
+                                <div className="steps">
+                                    <div className="step success">
+                                        <h4>Type Checking</h4>
+                                        <p>Ensures type compatibility in operations and assignments</p>
+                                    </div>
+                                    <div className="step success">
+                                        <h4>Declaration Validation</h4>
+                                        <p>Verifies that variables are declared before use</p>
+                                    </div>
+                                    <div className="step success">
+                                        <h4>Scope Checking</h4>
+                                        <p>Ensures variables are used within their proper scope</p>
+                                    </div>
+                                    <div className="step success">
+                                        <h4>Static Semantic Analysis</h4>
+                                        <p>Catches errors at compile-time before execution</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="info-box">
+                                <h4>🎓 Real-World Application</h4>
+                                <p style={{lineHeight: '1.6'}}>
+                                    Attribute grammars are used in compiler design to perform semantic analysis.
+                                    Modern compilers like GCC, Clang, and others use variations of attribute grammars
+                                    to ensure code correctness before generating executable code.
+                                </p>
+                            </div>
+                        </TabContent>
+
+                        <TabContent index={1}>
+                            <div className="card">
+                                <h3>📐 Grammar Rules for Our Example</h3>
+                                <div className="grammar-rules">
+                                    {grammar.map((rule, index) => (
+                                        <div key={index} style={{marginBottom: '25px'}}>
+                                            <div className="rule">
+                                                <strong>Syntax Rule:</strong> {rule.syntax}
+                                            </div>
+                                            <div className="rule semantic-rule">
+                                                <strong>Semantic Rule:</strong> {rule.semantic}
+                                            </div>
+                                            <div style={{
+                                                padding: '10px',
+                                                background: '#f0f4ff',
+                                                borderRadius: '8px',
+                                                marginTop: '10px',
+                                                fontSize: '0.95em'
+                                            }}>
+                                                <strong>Explanation:</strong> {rule.description}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="card">
+                                <h3>🗂️ Symbol Table</h3>
+                                <p style={{marginBottom: '20px', fontSize: '1.05em'}}>
+                                    Contains information about variables defined in the program
+                                </p>
+                                <table className="symbol-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Variable Name</th>
+                                            <th>Type</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>A</code></td>
+                                            <td><span className="node-attribute">real</span></td>
+                                            <td>Floating-point number</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>B</code></td>
+                                            <td><span className="node-attribute">real</span></td>
+                                            <td>Floating-point number</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>C</code></td>
+                                            <td><span className="node-attribute">int</span></td>
+                                            <td>Integer number</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="info-box">
+                                <h4>📝 Important Note</h4>
+                                <p style={{lineHeight: '1.6'}}>
+                                    In this example, variables <code>A</code> and <code>B</code> are of type <code>real</code> 
+                                    while <code>C</code> is of type <code>int</code>. When adding <code>real + int</code>, 
+                                    the result is <code>real</code> (automatic type conversion/coercion).
+                                </p>
+                            </div>
+
+                            <div className="card">
+                                <h3>🔄 Type Conversion Rules</h3>
+                                <table className="symbol-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Operation</th>
+                                            <th>Operand 1</th>
+                                            <th>Operand 2</th>
+                                            <th>Result Type</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>+</code></td>
+                                            <td>int</td>
+                                            <td>int</td>
+                                            <td><span className="node-attribute">int</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>+</code></td>
+                                            <td>int</td>
+                                            <td>real</td>
+                                            <td><span className="node-attribute">real</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>+</code></td>
+                                            <td>real</td>
+                                            <td>int</td>
+                                            <td><span className="node-attribute">real</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>+</code></td>
+                                            <td>real</td>
+                                            <td>real</td>
+                                            <td><span className="node-attribute">real</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </TabContent>
+
+                        <TabContent index={2}>
+                            <div className="card">
+                                <h3>🧪 Try It Yourself</h3>
+                                <p style={{marginBottom: '20px', fontSize: '1.05em'}}>
+                                    Enter an assignment statement and see how it's analyzed step by step
+                                </p>
+                                <div className="example-input">
+                                    <input 
+                                        type="text" 
+                                        value={exampleCode}
+                                        onChange={(e) => setExampleCode(e.target.value)}
+                                        placeholder="Example: A = B + C"
+                                    />
+                                    <button className="btn" onClick={analyzeCode}>
+                                        🔍 Analyze Code
+                                    </button>
+                                </div>
+
+                                <div className="info-box">
+                                    <h4>💡 Try these examples:</h4>
+                                    <p>• <code>A = B</code> - Simple assignment</p>
+                                    <p>• <code>A = B + C</code> - Addition with type conversion</p>
+                                    <p>• <code>B = A + B</code> - Both operands are real</p>
+                                </div>
+
+                                {analysis && !analysis.error && (
+                                    <>
+                                        <div className="card" style={{marginTop: '30px'}}>
+                                            <h3>📋 Analysis Steps</h3>
+                                            <div className="steps">
+                                                {analysis.steps.map((stepText, index) => (
+                                                    <div 
+                                                        key={index} 
+                                                        className={`step ${
+                                                            stepText.includes('✓') ? 'success' : 
+                                                            stepText.includes('✗') ? 'error' : ''
+                                                        }`}
+                                                        style={{
+                                                            opacity: step >= index ? 1 : 0.3,
+                                                            transition: 'opacity 0.3s'
+                                                        }}
+                                                    >
+                                                        <h4>Step {index + 1}</h4>
+                                                        <p style={{fontSize: '1.1em'}}>{stepText}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div style={{textAlign: 'center', marginTop: '20px'}}>
+                                                <button 
+                                                    className="btn"
+                                                    onClick={() => setStep(Math.min(step + 1, analysis.steps.length - 1))}
+                                                    disabled={step >= analysis.steps.length - 1}
+                                                    style={{marginRight: '10px'}}
+                                                >
+                                                    Next Step →
+                                                </button>
+                                                <button 
+                                                    className="btn"
+                                                    onClick={() => setStep(0)}
+                                                    style={{background: '#607d8b'}}
+                                                >
+                                                    Reset
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="card">
+                                            <h3>📊 Analysis Summary</h3>
+                                            <div className="grid-2">
+                                                <div className="info-box">
+                                                    <h4>Left Side</h4>
+                                                    <p>Variable: <code>{analysis.leftVar}</code></p>
+                                                    <p>Type: <span className="node-attribute">{analysis.leftType}</span></p>
+                                                    <p style={{marginTop: '10px', fontSize: '0.9em'}}>
+                                                        This is the target variable receiving the value
+                                                    </p>
+                                                </div>
+                                                <div className="info-box">
+                                                    <h4>Right Side</h4>
+                                                    <p>Expression: <code>{analysis.rightExpr}</code></p>
+                                                    <p>Type: <span className="node-attribute">{analysis.rightType}</span></p>
+                                                    <p style={{marginTop: '10px', fontSize: '0.9em'}}>
+                                                        This is the computed expression type
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            
+                                            {analysis.var2 && (
+                                                <div className="info-box" style={{marginTop: '20px'}}>
+                                                    <h4>🔢 Operand Details</h4>
+                                                    <p>First operand: <code>{analysis.var1}</code> 
+                                                       <span className="badge badge-synth">{analysis.var1Type}</span></p>
+                                                    <p>Second operand: <code>{analysis.var2}</code> 
+                                                       <span className="badge badge-synth">{analysis.var2Type}</span></p>
+                                                    <p style={{marginTop: '10px'}}>
+                                                        Result: <span className="badge badge-synth">{analysis.rightType}</span>
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+
+                                {analysis && analysis.error && (
+                                    <div className="card error" style={{marginTop: '20px'}}>
+                                        <h3>❌ Error</h3>
+                                        <p style={{fontSize: '1.2em'}}>{analysis.error}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </TabContent>
+
+                        <TabContent index={3}>
+                            <div className="card">
+                                <h3>🌳 Parse Tree with Attributes</h3>
+                                <p style={{marginBottom: '20px'}}>
+                                    Visual representation of attribute flow in the parse tree for: <code>A = B + C</code>
+                                </p>
+
+                                <div className="parse-tree" style={{textAlign: 'center'}}>
+                                    <div className="tree-node">
+                                        <div className="node-content">&lt;assign&gt;</div>
+                                    </div>
+                                    
+                                    <div style={{display: 'flex', justifyContent: 'center', gap: '100px', marginTop: '40px', flexWrap: 'wrap'}}>
+                                        <div>
+                                            <div className="tree-connection"></div>
+                                            <div className="node-content">&lt;var&gt;</div>
+                                            <div className="node-attribute">actual_type: real</div>
+                                            <div className="tree-connection"></div>
+                                            <div className="node-content" style={{background: '#4caf50'}}>A</div>
+                                        </div>
+
+                                        <div>
+                                            <div className="tree-connection"></div>
+                                            <div className="node-content">=</div>
+                                        </div>
+
+                                        <div>
+                                            <div className="tree-connection"></div>
+                                            <div className="node-content">&lt;expr&gt;</div>
+                                            <div className="node-attribute">expected_type: real</div>
+                                            <div className="node-attribute">actual_type: real</div>
+                                            
+                                            <div style={{display: 'flex', justifyContent: 'center', gap: '50px', marginTop: '30px'}}>
+                                                <div>
+                                                    <div className="tree-connection"></div>
+                                                    <div className="node-content">&lt;var&gt;[2]</div>
+                                                    <div className="node-attribute">actual_type: real</div>
+                                                    <div className="tree-connection"></div>
+                                                    <div className="node-content" style={{background: '#4caf50'}}>B</div>
+                                                </div>
+
+                                                <div>
+                                                    <div className="tree-connection"></div>
+                                                    <div className="node-content">+</div>
+                                                </div>
+
+                                                <div>
+                                                    <div className="tree-connection"></div>
+                                                    <div className="node-content">&lt;var&gt;[3]</div>
+                                                    <div className="node-attribute">actual_type: int</div>
+                                                    <div className="tree-connection"></div>
+                                                    <div className="node-content" style={{background: '#4caf50'}}>C</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="info-box" style={{marginTop: '40px'}}>
+                                    <h4>🔄 Attribute Flow</h4>
+                                    <div className="steps">
+                                        <div className="step">
+                                            <h4>⬇️ Synthesized (Bottom-Up)</h4>
+                                            <p>1. Look up variable types in symbol table: B (real), C (int)</p>
+                                            <p>2. Compute expression type: real + int = real</p>
+                                            <p>3. Propagate actual type upward: expr.actual_type = real</p>
+                                        </div>
+                                        <div className="step">
+                                            <h4>⬆️ Inherited (Top-Down)</h4>
+                                            <p>1. Look up left variable type: A (real)</p>
+                                            <p>2. Propagate expected type downward: expr.expected_type = real</p>
+                                            <p>3. Verify: actual_type (real) = expected_type (real) ✓</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="card success">
+                                <h3>✅ Final Result</h3>
+                                <p style={{fontSize: '1.2em', lineHeight: '1.8'}}>
+                                    The assignment <code>A = B + C</code> is valid because:
+                                    <br/>• Type of <code>A</code> is <code>real</code>
+                                    <br/>• Type of expression <code>B + C</code> is <code>real</code> (real + int = real)
+                                    <br/>• Compatibility: <code>real ← real</code> ✓
+                                </p>
+                            </div>
+                        </TabContent>
+
+                        <TabContent index={4}>
+                            <div className="card">
+                                <h3>🔧 How Attribute Grammar Works</h3>
+                                <p style={{fontSize: '1.1em', lineHeight: '1.8', marginBottom: '20px'}}>
+                                    Let's walk through the complete process of how attribute grammars analyze code:
+                                </p>
+
+                                <div className="attribute-flow">
+                                    <h4 style={{color: '#667eea', marginBottom: '15px'}}>Phase 1: Parsing & Tree Construction</h4>
+                                    <div className="flow-line">
+                                        <div className="flow-step">
+                                            <strong>Step 1:</strong> Parse the input string using CFG rules
+                                            <code style={{display: 'block', marginTop: '10px'}}>A = B + C</code>
+                                        </div>
+                                        <div className="flow-step">
+                                            <strong>Step 2:</strong> Build parse tree structure
+                                            <p style={{fontSize: '0.95em', marginTop: '5px'}}>
+                                                Create nodes for &lt;assign&gt;, &lt;var&gt;, &lt;expr&gt;, etc.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <h4 style={{color: '#667eea', marginBottom: '15px', marginTop: '30px'}}>
+                                        Phase 2: Attribute Computation
+                                    </h4>
+                                    <div className="flow-line">
+                                        <div className="flow-step">
+                                            <strong>Step 3:</strong> Compute Synthesized Attributes (Bottom-Up)
+                                            <div style={{marginTop: '10px'}}>
+                                                <p>• Lookup: B → real <span className="badge badge-synth">synthesized</span></p>
+                                                <p>• Lookup: C → int <span className="badge badge-synth">synthesized</span></p>
+                                                <p>• Compute: real + int → real <span className="badge badge-synth">synthesized</span></p>
+                                            </div>
+                                        </div>
+                                        <div className="flow-step">
+                                            <strong>Step 4:</strong> Compute Inherited Attributes (Top-Down)
+                                            <div style={{marginTop: '10px'}}>
+                                                <p>• Lookup: A → real</p>
+                                                <p>• Pass down: expected_type = real <span className="badge badge-inherit">inherited</span></p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <h4 style={{color: '#667eea', marginBottom: '15px', marginTop: '30px'}}>
+                                        Phase 3: Semantic Validation
+                                    </h4>
+                                    <div className="flow-line">
+                                        <div className="flow-step">
+                                            <strong>Step 5:</strong> Evaluate Predicates
+                                            <p style={{marginTop: '10px'}}>
+                                                Check: actual_type (real) == expected_type (real)
+                                            </p>
+                                        </div>
+                                        <div className="flow-step success">
+                                            <strong>Step 6:</strong> Final Result
+                                            <p style={{marginTop: '10px'}}>
+                                                ✓ All semantic constraints satisfied!
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="card">
+                                <h3>📚 Attribute Dependencies</h3>
+                                <div className="grid-2">
+                                    <div className="info-box">
+                                        <h4>Dependency Graph</h4>
+                                        <p style={{lineHeight: '1.6'}}>
+                                            Attributes form a <strong>dependency graph</strong> that determines 
+                                            the order of computation. The graph must be acyclic for a valid 
+                                            attribute grammar.
+                                        </p>
+                                    </div>
+                                    <div className="info-box">
+                                        <h4>Evaluation Order</h4>
+                                        <p style={{lineHeight: '1.6'}}>
+                                            Synthesized attributes are evaluated <strong>after</strong> their children.
+                                            Inherited attributes are evaluated <strong>before</strong> their children.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="card">
+                                <h3>🎯 Real Compiler Example</h3>
+                                <p style={{marginBottom: '15px'}}>Here's how a real compiler uses attribute grammars:</p>
+                                
+                                <div className="steps">
+                                    <div className="step">
+                                        <h4>Lexical Analysis</h4>
+                                        <p>Tokenize: <code>A</code> <code>=</code> <code>B</code> <code>+</code> <code>C</code></p>
+                                    </div>
+                                    <div className="step">
+                                        <h4>Syntax Analysis</h4>
+                                        <p>Build parse tree using CFG rules</p>
+                                    </div>
+                                    <div className="step">
+                                        <h4>Semantic Analysis (Using Attribute Grammar)</h4>
+                                        <p>• Symbol table lookup</p>
+                                        <p>• Type checking</p>
+                                        <p>• Scope validation</p>
+                                    </div>
+                                    <div className="step">
+                                        <h4>Code Generation</h4>
+                                        <p>Generate intermediate/machine code only if semantics are valid</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="info-box">
+                                <h4>💡 Key Takeaway</h4>
+                                <p style={{fontSize: '1.1em', lineHeight: '1.7'}}>
+                                    Attribute grammars bridge the gap between <strong>syntax</strong> (what the code looks like) 
+                                    and <strong>semantics</strong> (what the code means). They enable compilers to catch 
+                                    type errors, undefined variables, and other semantic issues before runtime, 
+                                    making programs safer and more reliable.
+                                </p>
+                            </div>
+                        </TabContent>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<AttributeGrammarDashboard />, document.getElementById('root'));
+    </script>
+</body>
+</html>
